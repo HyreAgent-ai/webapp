@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HyreAgent · Privacy Policy</title>
+  <style>
+    body { max-width: 720px; margin: 2rem auto; padding: 0 1rem; font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; color: #222; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    .version { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+    h2 { font-size: 1.15rem; margin-top: 2rem; }
+    h3 { font-size: 1.0rem; margin-top: 1.5rem; }
+    code { background: #f3f3f3; padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
+    .callout { background: #fff8e1; border-left: 3px solid #f0b400; padding: 0.75rem 1rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Privacy Policy</h1>
+<p class="version">Version 2026-05-18 · HyreAgent.ai closed beta</p>
+
+<p>This is the plain-English version. If you want the legal version, email <a href="mailto:siddardth7@gmail.com">siddardth7@gmail.com</a> and we'll write one — but at five beta users, plain English is more honest.</p>
+
+<h2>Who runs HyreAgent</h2>
+
+<p>One person — Siddardth Pathipaka. Solo founder. Reachable at <a href="mailto:siddardth7@gmail.com">siddardth7@gmail.com</a>. That's the entire "company" right now. The closed beta is intentionally small (about 5 invited users) while the product is matured.</p>
+
+<h2>What data we store</h2>
+
+<p>When you sign up and use HyreAgent, we store:</p>
+
+<ul>
+  <li><strong>Your account info</strong> — email, name (if you give us one), the timestamp you signed up.</li>
+  <li><strong>Your resumes</strong> — the resume files you upload, the PDF/LaTeX outputs we generate from them, your tailoring history.</li>
+  <li><strong>Your job feed</strong> — the jobs our scrapers find and surface to you, your reactions (applied, saved, dismissed), your private notes.</li>
+  <li><strong>Your applications</strong> — the jobs you've applied to via HyreAgent, your status (applied, interviewing, rejected, offer), the cover letters we helped you write.</li>
+  <li><strong>Your settings</strong> — your preferences, your API keys (if you bring your own), your custom company list.</li>
+  <li><strong>Your contacts</strong> — if you import a LinkedIn CSV, the names/titles/companies/emails from that file. See <em>About your LinkedIn contacts</em> below.</li>
+  <li><strong>Consent records</strong> — every time you accept (or revoke) a consent, we write a row noting which consent, what version, when. This is the trail GDPR Art. 7 requires.</li>
+</ul>
+
+<p>We don't store: payment info (the beta is free), location data, browser cookies for analytics, third-party tracker IDs.</p>
+
+<h2>Where it lives and who sees it</h2>
+
+<p>The data lives in <strong>Supabase</strong> (Postgres database) and <strong>Vercel</strong> (the app servers). Both are US-based providers; both are SOC 2 Type II audited. Every table has row-level security: <strong>only you can read your data</strong> through the app.</p>
+
+<p>The one exception is Siddardth, who can read your data directly in the database during support and debugging. If you'd rather he didn't, email him and he'll set up a flag that masks your rows except in your presence.</p>
+
+<p>We do not sell data. We do not share data with marketers. We do not enrich your data with third-party APIs without asking you first.</p>
+
+<h2>What we do with it</h2>
+
+<ul>
+  <li><strong>Show you the product.</strong> Every screen reads only your data.</li>
+  <li><strong>Send your resumes to AI providers</strong> (Groq for analysis + tailoring, Serper for contact search). Both providers contractually do not retain your data for training. We pass the minimum payload needed and strip our own metadata.</li>
+  <li><strong>Compile resumes</strong> via our resume-compiler service (Google Cloud Run). The compilation is stateless — your data passes through, the PDF comes back, nothing is kept on the compiler.</li>
+  <li><strong>Surface job postings</strong>. We scrape public job boards on a schedule and match relevant ones to you. The scraper does not see your data — it runs blind and tags results to you afterward.</li>
+</ul>
+
+<h2>About your LinkedIn contacts</h2>
+
+<div class="callout">
+<p><strong>Important.</strong> HyreAgent does <em>not</em> scrape LinkedIn on your behalf. It can't — LinkedIn's terms forbid it, and EU law would forbid it even if LinkedIn allowed it.</p>
+<p>What we <em>do</em> support: you export your connections from LinkedIn as a CSV (LinkedIn gives you this right under their data-portability tool), then upload the CSV to HyreAgent. We treat that CSV as a list you have the right to import — by uploading, you tell us so.</p>
+<p>The imported contacts are stored under your account only. We don't email them, don't enrich them with other sources, don't show them to anyone but you. You can delete any contact one-by-one or bulk-delete the whole CSV import in Settings.</p>
+</div>
+
+<p>If you are a contact in someone else's HyreAgent account and want your information removed: email <a href="mailto:siddardth7@gmail.com">siddardth7@gmail.com</a> with the email address you'd like searched. We will locate your row(s) and delete them within 30 days, and confirm by email.</p>
+
+<h2>Your rights (the GDPR / CCPA things)</h2>
+
+<p>You can, at any time:</p>
+
+<ul>
+  <li><strong>See your data.</strong> Settings → "Download my data" returns a JSON file of every row in every table tied to your user_id.</li>
+  <li><strong>Correct your data.</strong> Every screen that shows your data has an edit button. If something doesn't, email Siddardth.</li>
+  <li><strong>Delete your account.</strong> Settings → "Delete my account" wipes everything within 24 hours. We keep an anonymized log entry noting the deletion happened (no PII), nothing else.</li>
+  <li><strong>Object to processing.</strong> If you're uncomfortable with how we use any specific piece of data, email Siddardth and we'll figure it out (probably: stop doing that thing, or delete that data).</li>
+  <li><strong>Lodge a complaint</strong> with your local data protection authority. In the EU that's whichever DPA covers your member state.</li>
+</ul>
+
+<h2>How long we keep it</h2>
+
+<ul>
+  <li>Active account data: as long as your account is active.</li>
+  <li>After you delete your account: 7 days in soft-delete (in case you change your mind), then hard-deleted.</li>
+  <li>Imported contacts you haven't interacted with in 24 months: we'll ask you whether to keep or purge (Settings notification).</li>
+  <li>Server logs: 30 days (Vercel default), then deleted.</li>
+</ul>
+
+<h2>How long it takes us to respond</h2>
+
+<p>For any data request (access, correction, deletion, objection): within 30 days. In practice, much faster — solo operator means same-day in most cases.</p>
+
+<h2>If we change this policy</h2>
+
+<p>You'll see a banner on your next session asking you to re-confirm. Until you do, the product nudges you back to this page. We pin the version of the policy you accepted in the consent ledger, so we can prove what you saw when you signed up.</p>
+
+<h2>How to reach us</h2>
+
+<p>Email <a href="mailto:siddardth7@gmail.com">siddardth7@gmail.com</a>. Or DM Siddardth on Slack if you're in the beta. Both routes go to the same human.</p>
+
+<hr>
+<p style="font-size: 0.9em; color: #888;">Version 2026-05-18. The version string is pinned in our consent ledger; this is the document you accepted if your consent record shows <code>version=2026-05-18</code>.</p>
+
+</body>
+</html>
