@@ -42,6 +42,71 @@ function sanitizeApplication(app) {
   };
 }
 
+// Field whitelists for the four upsert helpers that previously did mass-assignment
+// (CODE-11). Each returns ONLY columns the UI legitimately edits — anything else
+// the caller passes in is discarded so a logged-in user cannot set system-controlled
+// columns (timestamps, ownership flags) by spreading an object into the upsert.
+
+function sanitizeTemplate(t) {
+  return {
+    id:   t.id,
+    name: t.name || null,
+    body: t.body || null,
+  };
+}
+
+function sanitizeRoleTarget(rt) {
+  return {
+    id:           rt.id,
+    title:        rt.title || null,
+    cluster:      rt.cluster || null,
+    priority:     rt.priority != null ? parseInt(rt.priority) || null : null,
+    keywords:     Array.isArray(rt.keywords) ? rt.keywords : [],
+    boost_tags:   Array.isArray(rt.boost_tags) ? rt.boost_tags : [],
+    require_h1b: !!rt.require_h1b,
+    active:       rt.active !== undefined ? !!rt.active : true,
+  };
+}
+
+function sanitizeResumeVariant(v) {
+  return {
+    id:              v.id,
+    variant_key:     v.variant_key || null,
+    name:            v.name || null,
+    description:     v.description || null,
+    target_clusters: Array.isArray(v.target_clusters) ? v.target_clusters : [],
+  };
+}
+
+// Allowed columns for public.contacts. Built from observed reads/writes in
+// src/components/networking/* and src/components/Dashboard.jsx. Anything not in
+// this whitelist is dropped from upserts/updates.
+const CONTACT_ALLOWED = new Set([
+  'id', 'name', 'company', 'position', 'title', 'type', 'role_type', 'persona',
+  'email', 'linkedin_url',
+  'conv_status', 'conversation_stage',
+  'last_contact', 'days_since', 'message_count',
+  'follow_up', 'follow_up_priority', 'follow_up_snoozed_until',
+  'outreach_status', 'outreach_date', 'outreach_sent', 'outreach_status_changed_at',
+  'is_poc_candidate', 'is_confirmed_poc', 'poc_score',
+  'priority', 'next_action',
+  'promise_made', 'promise_status', 'promise_text',
+  'two_way_conversation', 'relationship_strength',
+  'uiuc', 'summary', 'notes', 'why',
+]);
+
+function sanitizeContact(c) {
+  // Accept camelCase aliases the rest of the codebase emits.
+  const normalized = { ...c, linkedin_url: c.linkedin_url || c.linkedinUrl || null };
+  const out = {};
+  for (const k of Object.keys(normalized)) {
+    if (CONTACT_ALLOWED.has(k)) out[k] = normalized[k];
+  }
+  // Ensure id is always present (callers enforce it upstream).
+  if (c.id !== undefined) out.id = c.id;
+  return out;
+}
+
 export async function insertManualApplication(input) {
   const userId = await getUserId();
   const row = sanitizeApplication({
@@ -357,10 +422,11 @@ export async function fetchTemplates() {
 }
 
 export async function upsertTemplate(template) {
+  if (!template.id) throw new Error('upsertTemplate: id is required');
   const userId = await getUserId();
   const { error } = await supabase
     .from('templates')
-    .upsert({ ...template, user_id: userId }, { onConflict: 'id' });
+    .upsert({ ...sanitizeTemplate(template), user_id: userId }, { onConflict: 'id' });
   if (error) throw error;
 }
 
@@ -594,7 +660,7 @@ export async function upsertRoleTarget(target) {
   const userId = await getUserId();
   const { data, error } = await supabase
     .from('role_targets')
-    .upsert({ ...target, user_id: userId }, { onConflict: 'id' })
+    .upsert({ ...sanitizeRoleTarget(target), user_id: userId }, { onConflict: 'id' })
     .select()
     .single();
   if (error) throw error;
@@ -627,7 +693,7 @@ export async function upsertResumeVariant(variant) {
   const userId = await getUserId();
   const { error } = await supabase
     .from('resume_variants')
-    .upsert({ ...variant, user_id: userId }, { onConflict: 'user_id,variant_key' });
+    .upsert({ ...sanitizeResumeVariant(variant), user_id: userId }, { onConflict: 'user_id,variant_key' });
   if (error) throw error;
 }
 
@@ -830,7 +896,7 @@ export async function upsertContact(contact) {
   const userId = await getUserId();
   const { error } = await supabase
     .from('contacts')
-    .upsert({ ...contact, user_id: userId, updated_at: new Date().toISOString() },
+    .upsert({ ...sanitizeContact(contact), user_id: userId, updated_at: new Date().toISOString() },
              { onConflict: 'id' });
   if (error) throw error;
 }
@@ -838,9 +904,14 @@ export async function upsertContact(contact) {
 export async function updateContactFields(id, updates) {
   if (!id) throw new Error('updateContactFields: id is required');
   const userId = await getUserId();
+  // sanitizeContact strips disallowed keys from partial updates; id is applied
+  // via .eq(), not in the payload, so remove it before the update call.
+  const payload = sanitizeContact(updates);
+  delete payload.id;
+  payload.updated_at = new Date().toISOString();
   const { error } = await supabase
     .from('contacts')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update(payload)
     .eq('id', id)
     .eq('user_id', userId);
   if (error) throw error;
