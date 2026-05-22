@@ -31,22 +31,22 @@ INSERT INTO public.normalized_jobs (id, company_name, job_title, location, job_u
 SELECT
     gen_random_uuid(),
     j.company,
-    j.title,
+    j.role,
     COALESCE(j.location, ''),
-    j.url,
+    j.link,
     COALESCE(j.source, 'legacy'),
     j.created_at::date,
-    j.description,
+    j.jd,
     j.created_at
 FROM public.jobs j
 WHERE NOT EXISTS (
     SELECT 1
     FROM public.normalized_jobs n
     WHERE lower(regexp_replace(n.job_url, '\?.*$', '')) =
-          lower(regexp_replace(j.url,     '\?.*$', ''))
+          lower(regexp_replace(j.link,    '\?.*$', ''))
 )
-AND j.url IS NOT NULL
-AND j.url <> '';
+AND j.link IS NOT NULL
+AND j.link <> '';
 
 -- 2. Insert user_job_feed entries for Siddardth's 35 rows.
 --    ON CONFLICT keeps the migration idempotent — re-running won't double-add.
@@ -65,14 +65,11 @@ SELECT
     'de1bafab-7e76-4b80-a7ed-8de86c6d9bad'::uuid AS user_id,
     n.id                                           AS job_id,
     COALESCE(j.in_pipeline, false)                 AS in_pipeline,
-    CASE
-        WHEN j.match ~ '^[0-9]+$' THEN j.match::int
-        ELSE NULL
-    END                                            AS user_relevance_score,
+    j.match                                        AS user_relevance_score,
     j.analysis_result                              AS analysis_result,
-    j."resumeVariant"                              AS resume_variant,
+    j.resume_variant                               AS resume_variant,
     CASE
-        WHEN j.applied_at IS NOT NULL THEN 'applied'
+        WHEN j.status = 'applied'     THEN 'applied'
         WHEN j.in_pipeline = true     THEN 'viewed'
         ELSE 'new'
     END                                            AS status,
@@ -82,7 +79,7 @@ SELECT
 FROM public.jobs j
 JOIN public.normalized_jobs n
   ON lower(regexp_replace(n.job_url, '\?.*$', '')) =
-     lower(regexp_replace(j.url,     '\?.*$', ''))
+     lower(regexp_replace(j.link,    '\?.*$', ''))
 ON CONFLICT (user_id, job_id) DO NOTHING;
 
 -- 3. Sanity check — before dropping, assert the row count matches.
