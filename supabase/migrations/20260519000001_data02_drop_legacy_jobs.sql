@@ -27,17 +27,16 @@ BEGIN;
 
 -- 1. Insert any missing job rows into normalized_jobs.
 --    Match on lowercased canonical job_url (strip query string + trailing slash).
-INSERT INTO public.normalized_jobs (id, company_name, job_title, location, job_url, source, posted_date, summary, scraped_at)
+INSERT INTO public.normalized_jobs (id, company_name, job_title, location, job_url, source, posted_date, description)
 SELECT
-    gen_random_uuid(),
+    gen_random_uuid()::text,
     j.company,
     j.role,
     COALESCE(j.location, ''),
     j.link,
     COALESCE(j.source, 'legacy'),
-    j.created_at::date,
-    j.jd,
-    j.created_at
+    j.created_at::date::text,
+    j.jd
 FROM public.jobs j
 WHERE NOT EXISTS (
     SELECT 1
