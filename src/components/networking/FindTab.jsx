@@ -3,6 +3,7 @@ import { Users, Linkedin, Mail, Send } from 'lucide-react';
 import { supabase } from '../../supabase.js';
 import Avatar from './shared/Avatar.jsx';
 import ContactDraftSection from './shared/ContactDraftSection.jsx';
+import { ENABLE_LINKEDIN_IMPORT } from '../../lib/feature-flags.js';
 
 const PERSONAS = ['Recruiter','Hiring Manager','Peer Engineer','Executive','UIUC Alumni','Senior Engineer'];
 
@@ -157,7 +158,7 @@ export default function FindTab({ currentJob, contacts, addContact, groqKey, ser
                     )}
                     {c.why && <div style={{ fontSize: 12, color: t.muted, marginTop: 4, fontStyle: 'italic' }}>{c.why}</div>}
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10 }}>
-                      {linkedinUrl && (
+                      {ENABLE_LINKEDIN_IMPORT && linkedinUrl && (
                         <a href={linkedinUrl} target="_blank" rel="noreferrer"
                           style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: '#0077B5', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
                           <Linkedin size={14} /> LinkedIn Profile

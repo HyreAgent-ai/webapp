@@ -882,6 +882,7 @@ export async function fetchContacts() {
     .from('contacts')
     .select('*')
     .eq('user_id', userId)
+    .neq('source', 'linkedin_intelligence_v2')
     .order('priority',    { ascending: false })
     .order('last_contact', { ascending: false, nullsFirst: false });
   if (error) throw error;

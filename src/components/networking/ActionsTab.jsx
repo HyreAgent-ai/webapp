@@ -5,6 +5,7 @@ import PocCandidatesSection from './actions/PocCandidatesSection.jsx';
 import NewConnectionsSection from './actions/NewConnectionsSection.jsx';
 import LinkedInSyncPanel from './actions/LinkedInSyncPanel.jsx';
 import ContactDraftSection from './shared/ContactDraftSection.jsx';
+import { ENABLE_LINKEDIN_IMPORT } from '../../lib/feature-flags.js';
 
 export default function ActionsTab({ contacts, updateContact, currentJob, groqKey, t }) {
   const [draftContact, setDraftContact] = useState(null);
@@ -26,7 +27,7 @@ export default function ActionsTab({ contacts, updateContact, currentJob, groqKe
       <PromisesSection contacts={contacts} updateContact={updateContact} t={t} />
       <PocCandidatesSection contacts={contacts} updateContact={updateContact} t={t} />
       <NewConnectionsSection contacts={contacts} updateContact={updateContact} onDraft={setDraftContact} t={t} />
-      <LinkedInSyncPanel t={t} />
+      {ENABLE_LINKEDIN_IMPORT && <LinkedInSyncPanel t={t} />}
 
       {draftContact && (
         <div style={{ marginTop: 16, padding: 14, border: `1px solid ${t.border}`, borderRadius: 10, background: t.card }}>
