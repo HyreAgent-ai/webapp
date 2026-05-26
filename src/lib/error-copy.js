@@ -99,6 +99,12 @@ export const ERROR_COPY = {
     action_label: 'Re-confirm',
     action_href: '/welcome/consent',
   },
+  CONSENT_REQUIRED: {
+    title: 'We need a quick consent first.',
+    body: "We can't create an account without your okay on data storage and beta terms. Takes 20 seconds.",
+    action_label: 'Show me',
+    action_href: '/welcome/consent',
+  },
 
   // ── 429 — rate / quota ─────────────────────────────────────────────────────
   RATE_LIMITED: {

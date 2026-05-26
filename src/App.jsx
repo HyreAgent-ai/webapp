@@ -12,6 +12,10 @@ import { supabase } from "./supabase.js";
 import Login from "./components/Login.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
 import Onboarding from "./components/Onboarding.jsx";
+import Welcome from "./components/welcome/Welcome.jsx";
+import Consent from "./components/welcome/Consent.jsx";
+import Declined from "./components/welcome/Declined.jsx";
+import Signup from "./components/Signup.jsx";
 
 import Dashboard from "./components/Dashboard.jsx";
 import FindJobs from "./components/FindJobs.jsx";
@@ -118,6 +122,18 @@ export default function JobAgent() {
   const [saveError,    setSaveError]    = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [page, setPageRaw] = useState("dashboard");
+
+  // Gate 2 — pre-signup pathname routing. /welcome, /welcome/consent,
+  // /welcome/declined, /signup are unauthenticated routes that intercept
+  // BEFORE the auth gate so prospective users can read consent first.
+  const [welcomePath, setWelcomePath] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const p = window.location.pathname;
+    if (p === '/welcome' || p === '/welcome/consent' || p === '/welcome/declined' || p === '/signup') {
+      return p;
+    }
+    return null;
+  });
 
   const [apps, setApps] = useState([]);
   const [pipeline, setPipeline] = useState([]);
@@ -456,6 +472,16 @@ export default function JobAgent() {
     </div>
   );
   if (passwordRecovery) return <ResetPassword t={t} onDone={() => setPasswordRecovery(false)} />;
+
+  // Gate 2 — pre-signup consent routes. Render whichever welcome step matches
+  // the pathname; only kicks in when no session exists. Authenticated users
+  // get auto-redirected to the dashboard so deep-link sharing doesn't break.
+  if (!user && welcomePath === '/welcome')           return <Welcome  t={t} />;
+  if (!user && welcomePath === '/welcome/consent')   return <Consent  t={t} />;
+  if (!user && welcomePath === '/welcome/declined')  return <Declined t={t} />;
+  if (!user && welcomePath === '/signup')            return <Signup   t={t} />;
+  if (user  && welcomePath) { window.location.assign('/'); return null; }
+
   if (!user) return <Login t={t} />;
   if (profile === null) return <Onboarding t={t} onComplete={() => Storage.fetchUserProfile().then(p => setProfile(p))} />;
 
