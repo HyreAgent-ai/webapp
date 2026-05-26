@@ -3,6 +3,7 @@ import { Database, Zap, RefreshCw, Plus, Trash2, Edit3, Check, X, ChevronDown, S
 import { DEFAULT_TEMPLATES } from '../lib/templates.js';
 import * as Storage from '../lib/storage.js';
 import { supabase } from '../supabase.js';
+import { deleteAccount } from '../lib/api/me.js';
 
 function Card({children, t, style}) {
   return <div style={{background:t.card,border:`1px solid ${t.border}`,borderRadius:12,padding:20,boxShadow:t.shadow,...style}}>{children}</div>;
@@ -32,6 +33,11 @@ export default function AppSettings({templates, setTemplates, groqKey, setGroqKe
 
   const [prefs, setPrefs]           = useState({});
   const [prefSaving, setPrefSaving] = useState('');
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Sync inputs when API keys load asynchronously from Supabase
   useEffect(() => { if (!groqDirty)   setGroqInput(groqKey   || ""); }, [groqKey,   groqDirty]);
@@ -184,6 +190,20 @@ export default function AppSettings({templates, setTemplates, groqKey, setGroqKe
       setMigrateStatus(`Migration failed: ${e.message}`);
     }
     setMigrating(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await deleteAccount();
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    } catch (e) {
+      setDeleteError(e.message || 'Deletion failed. Contact support.');
+      setDeleting(false);
+    }
   };
 
   const allTemplates = templates.length > 0 ? templates : DEFAULT_TEMPLATES;
@@ -420,7 +440,7 @@ export default function AppSettings({templates, setTemplates, groqKey, setGroqKe
       </Card>
 
       {/* Import from GitHub Gist */}
-      <Card t={t}>
+      <Card t={t} style={{marginBottom:20}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
           <div style={{width:34,height:34,borderRadius:9,background:t.priL,display:"flex",alignItems:"center",justifyContent:"center"}}>
             <RefreshCw size={16} color={t.pri}/>
@@ -455,6 +475,55 @@ export default function AppSettings({templates, setTemplates, groqKey, setGroqKe
           )}
         </div>
       </Card>
+
+      {/* Danger Zone */}
+      <div style={{marginTop:32,border:`1px solid ${t.redBd}`,borderRadius:12,padding:20}}>
+        <div style={{fontSize:14.5,fontWeight:700,color:t.red,marginBottom:8}}>Danger Zone</div>
+        <p style={{margin:"0 0 16px",fontSize:13,color:t.sub,lineHeight:1.6}}>
+          Permanently delete your account and all associated data. This cannot be undone.
+        </p>
+        <Btn variant="danger" onClick={() => { setShowDeleteModal(true); setDeleteConfirmText(''); setDeleteError(''); }} t={t}>
+          <Trash2 size={14}/> Delete Account
+        </Btn>
+      </div>
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+          <div style={{background:t.card,border:`1px solid ${t.border}`,borderRadius:14,padding:28,width:'100%',maxWidth:420,boxShadow:t.shadow}}>
+            <div style={{fontSize:17,fontWeight:800,color:t.tx,marginBottom:10}}>Delete your account?</div>
+            <p style={{margin:"0 0 16px",fontSize:13.5,color:t.sub,lineHeight:1.6}}>
+              This permanently deletes all your data including jobs, contacts, and integrations. This cannot be undone.
+            </p>
+            <div style={{marginBottom:16}}>
+              <label style={{fontSize:11,fontWeight:700,color:t.sub,display:'block',marginBottom:6,textTransform:'uppercase',letterSpacing:1}}>
+                Type <strong style={{color:t.red}}>DELETE</strong> to confirm
+              </label>
+              <input
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                autoFocus
+                style={{width:'100%',background:t.bg,border:`1px solid ${t.border}`,borderRadius:8,padding:'9px 13px',color:t.tx,fontSize:13.5,fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}
+              />
+            </div>
+            {deleteError && (
+              <div style={{fontSize:12.5,color:t.red,fontWeight:600,marginBottom:12,lineHeight:1.5}}>{deleteError}</div>
+            )}
+            <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+              <Btn variant="secondary" onClick={() => setShowDeleteModal(false)} disabled={deleting} t={t}>Cancel</Btn>
+              <Btn
+                variant="danger"
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE' || deleting}
+                t={t}
+              >
+                {deleting ? 'Deleting...' : 'Delete My Account'}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
