@@ -7,6 +7,30 @@ export async function signUp(email, password) {
   return data.user;
 }
 
+// Gate 2 — pre-signup consent.
+// Sends both consent grants in user_metadata so the on_auth_user_created
+// trigger writes consent_ledger rows in the same transaction as the
+// auth.users INSERT. Trigger fails closed on missing/non-'granted' values,
+// so a non-consenting user cannot get an auth.users row.
+export async function signUpWithConsent(email, password, consentPayload) {
+  if (!consentPayload || consentPayload.data_storage !== 'granted' || consentPayload.beta_terms !== 'granted') {
+    throw new Error('Both data_storage and beta_terms consent are required');
+  }
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        consent_data_storage: consentPayload.data_storage,
+        consent_beta_terms:   consentPayload.beta_terms,
+        consent_version:      consentPayload.version || '2026-05-25',
+      },
+    },
+  });
+  if (error) throw error;
+  return data.user;
+}
+
 export async function signIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
