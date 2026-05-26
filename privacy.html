@@ -17,7 +17,7 @@
 <body>
 
 <h1>Privacy Policy</h1>
-<p class="version">Version 2026-05-18 · HyreAgent.ai closed beta</p>
+<p class="version">Version 2026-05-25 · HyreAgent.ai closed beta</p>
 
 <p>This is the plain-English version. If you want the legal version, email <a href="mailto:siddardth7@gmail.com">siddardth7@gmail.com</a> and we'll write one — but at five beta users, plain English is more honest.</p>
 
@@ -76,6 +76,38 @@
   <li><strong>Lodge a complaint</strong> with your local data protection authority. In the EU that's whichever DPA covers your member state.</li>
 </ul>
 
+<h2>Your Right to Erasure (Article 17)</h2>
+
+<p>Under GDPR Article 17 you have the right to request erasure of your personal data. HyreAgent supports this right with a self-serve deletion flow — you do not need to email us or wait 30 days.</p>
+
+<h3>How to delete your account</h3>
+<p>Go to <strong>Settings → Danger Zone → Delete Account</strong>. Type <code>DELETE</code> to confirm. Your account is deleted immediately and you are signed out.</p>
+
+<h3>What gets deleted</h3>
+<p>The deletion cascade removes every row tied to your user ID across all tables:</p>
+<ul>
+  <li>Job applications and pipeline entries</li>
+  <li>Jobs and job feed history</li>
+  <li>Contacts (manually added and discovered via Find Contacts)</li>
+  <li>Integrations and API keys</li>
+  <li>Preferences</li>
+  <li>Consent records</li>
+  <li>Your authentication account (email, hashed password)</li>
+</ul>
+
+<h3>What we retain for compliance</h3>
+<p>A single audit record is written to a private table before your data is deleted. This record contains:</p>
+<ul>
+  <li>A <strong>SHA-256 hash of your user ID</strong> — a one-way cryptographic fingerprint. It cannot be reversed to identify you.</li>
+  <li>The event type: <code>account_deleted</code></li>
+  <li>A timestamp</li>
+</ul>
+<p>This record is retained indefinitely so we can demonstrate, if asked by a regulator, that a deletion event occurred. It contains no name, no email, and no other personal data. The hash alone is not personal data under GDPR Recital 26 because it cannot reasonably be used to identify you without information we no longer hold.</p>
+
+<div class="callout">
+  <strong>90-day note:</strong> The privacy policy previously referenced a "90-day soft-delete" window. That window has been removed. Deletion is now immediate and irreversible.
+</div>
+
 <h2>How long we keep it</h2>
 
 <ul>
@@ -98,7 +130,7 @@
 <p>Email <a href="mailto:siddardth7@gmail.com">siddardth7@gmail.com</a>. Or DM Siddardth on Slack if you're in the beta. Both routes go to the same human.</p>
 
 <hr>
-<p style="font-size: 0.9em; color: #888;">Version 2026-05-18. The version string is pinned in our consent ledger; this is the document you accepted if your consent record shows <code>version=2026-05-18</code>.</p>
+<p style="font-size: 0.9em; color: #888;">Version 2026-05-25. The version string is pinned in our consent ledger; this is the document you accepted if your consent record shows <code>version=2026-05-25</code>.</p>
 
 </body>
 </html>
