@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Database, Zap, RefreshCw, Plus, Trash2, Edit3, Check, X, ChevronDown, Sparkles, Info } from 'lucide-react';
+import { Database, Zap, RefreshCw, Plus, Trash2, Edit3, Check, X, ChevronDown, Sparkles, Info, Download } from 'lucide-react';
 import { DEFAULT_TEMPLATES } from '../lib/templates.js';
 import * as Storage from '../lib/storage.js';
 import { supabase } from '../supabase.js';
-import { deleteAccount } from '../lib/api/me.js';
+import { deleteAccount, exportAccount } from '../lib/api/me.js';
 
 function Card({children, t, style}) {
   return <div style={{background:t.card,border:`1px solid ${t.border}`,borderRadius:12,padding:20,boxShadow:t.shadow,...style}}>{children}</div>;
@@ -38,6 +38,22 @@ export default function AppSettings({templates, setTemplates, groqKey, setGroqKe
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+
+  const [exporting, setExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState('');
+
+  const handleExport = async () => {
+    setExporting(true);
+    setExportStatus('');
+    try {
+      const { filename } = await exportAccount();
+      setExportStatus(`Downloaded ${filename}`);
+    } catch (err) {
+      setExportStatus(`Export failed: ${err.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Sync inputs when API keys load asynchronously from Supabase
   useEffect(() => { if (!groqDirty)   setGroqInput(groqKey   || ""); }, [groqKey,   groqDirty]);
@@ -476,8 +492,25 @@ export default function AppSettings({templates, setTemplates, groqKey, setGroqKe
         </div>
       </Card>
 
+      {/* Data Rights — Article 15 SAR export (Gate 3) */}
+      <div style={{marginTop:32,border:`1px solid ${t.border}`,borderRadius:12,padding:20}}>
+        <div style={{fontSize:14.5,fontWeight:700,color:t.tx,marginBottom:8}}>Data Rights</div>
+        <p style={{margin:"0 0 16px",fontSize:13,color:t.sub,lineHeight:1.6}}>
+          Download a copy of all the personal data we hold about you, including resumes, applications,
+          contacts, and consent history. Returned as JSON. API keys are redacted.
+        </p>
+        <Btn variant="secondary" onClick={handleExport} disabled={exporting} t={t}>
+          <Download size={14}/> {exporting ? 'Preparing export…' : 'Export My Data'}
+        </Btn>
+        {exportStatus && (
+          <div style={{marginTop:10,fontSize:12.5,color:exportStatus.startsWith('Export failed') ? t.red : t.sub,lineHeight:1.5}}>
+            {exportStatus}
+          </div>
+        )}
+      </div>
+
       {/* Danger Zone */}
-      <div style={{marginTop:32,border:`1px solid ${t.redBd}`,borderRadius:12,padding:20}}>
+      <div style={{marginTop:24,border:`1px solid ${t.redBd}`,borderRadius:12,padding:20}}>
         <div style={{fontSize:14.5,fontWeight:700,color:t.red,marginBottom:8}}>Danger Zone</div>
         <p style={{margin:"0 0 16px",fontSize:13,color:t.sub,lineHeight:1.6}}>
           Permanently delete your account and all associated data. This cannot be undone.
