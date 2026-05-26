@@ -123,6 +123,11 @@ export const ERROR_COPY = {
     body: 'The AI returned something that didn\'t pass our safety check, so we threw it away rather than show it to you. Try again — usually it works the second time.',
     action_label: 'Try again',
   },
+  EXPORT_FAILED: {
+    title: "Couldn't build your data export.",
+    body: 'We hit an error pulling your data together. Try again in a minute, or ' + OWNER_CONTACT + ' with this code.',
+    action_label: 'Try again',
+  },
   INTERNAL_ERROR: {
     title: 'Something went wrong on our end.',
     body: 'Try again, or ' + OWNER_CONTACT + ' with this code.',
