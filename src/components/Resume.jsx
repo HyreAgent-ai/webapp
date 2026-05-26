@@ -3,9 +3,6 @@ import { Plus, Star, Trash2, Edit3, BarChart2, ChevronLeft, Loader, CheckCircle,
 import { fetchResumes, fetchResume, upsertResume, deleteResume, setPrimaryResume, saveResumeAnalysis } from '../lib/storage.js';
 import { analyzeResumeWithGroq, parseResumeTextWithGroq } from '../lib/groq.js';
 import { supabase } from '../supabase.js';
-import * as pdfjsLib from 'pdfjs-dist';
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href;
-
 const COMPILER_URL = import.meta.env.VITE_COMPILER_URL || 'https://resume-compiler-1077806152183.us-central1.run.app';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -128,6 +125,11 @@ async function parseUploadedResume(file) {
 
   if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
     const arrayBuffer = await file.arrayBuffer();
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.mjs',
+      import.meta.url
+    ).href;
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = '';
     for (let i = 1; i <= pdf.numPages; i++) {
