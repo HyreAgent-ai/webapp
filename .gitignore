@@ -75,3 +75,4 @@ Desktop.ini
 # Misc
 *.tmp
 .staging/
+.vercel
