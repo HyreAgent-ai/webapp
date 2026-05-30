@@ -146,7 +146,7 @@ export default function JobAgent() {
   const [groqKey, setGroqKey] = useState("");
   const [serperKey, setSerperKey] = useState("");
 
-  const saveTimer = useRef(null);
+  const saveTimers = useRef(new Map());
   const stateRef = useRef({});
 
   // Live clock for header — ticks every second
@@ -222,15 +222,16 @@ export default function JobAgent() {
     })();
   }, [user?.id]);
 
-  // Debounced save helper
-  const debouncedSave = useCallback((saveFn) => {
-    if (saveTimer.current) {
-      clearTimeout(saveTimer.current);
+  // Debounced save helper — per-key timers so concurrent saves don't cancel each other
+  const debouncedSave = useCallback((key, saveFn) => {
+    if (saveTimers.current.has(key)) {
+      clearTimeout(saveTimers.current.get(key));
       setPendingSaves(n => Math.max(0, n - 1));
     }
     setPendingSaves(n => n + 1);
     setSaveError(null);
-    saveTimer.current = setTimeout(async () => {
+    saveTimers.current.set(key, setTimeout(async () => {
+      saveTimers.current.delete(key);
       try {
         await saveFn();
         setPendingSaves(n => Math.max(0, n - 1));
@@ -240,7 +241,7 @@ export default function JobAgent() {
         setTimeout(() => setSaveError(null), 10000);
         console.error("Save error:", e);
       }
-    }, 2000);
+    }, 2000));
   }, []);
 
   // Re-fetch apps when navigating to Dashboard so counts are always fresh.
@@ -330,7 +331,7 @@ export default function JobAgent() {
 
   const updatePipelineJob = useCallback((id, updates) => {
     setPipeline(p => p.map(j => j.id === id ? {...j, ...updates} : j));
-    debouncedSave(() => {
+    debouncedSave(`pipeline_job_${id}`, () => {
       const job = stateRef.current.pipeline.find(j => j.id === id);
       if (job) return Storage.upsertJob({...job, ...updates});
     });
@@ -372,7 +373,7 @@ export default function JobAgent() {
       // normalized_jobs, so upsert would fail the FK constraint.
       const dbJobs = next.filter(j => j._feedId);
       if (dbJobs.length > 0) {
-        debouncedSave(() => Storage.upsertJobs(dbJobs.map(j => ({...j, in_pipeline: false}))));
+        debouncedSave('search_results', () => Storage.upsertJobs(dbJobs.map(j => ({...j, in_pipeline: false}))));
       }
       return next;
     });
