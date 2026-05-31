@@ -44,7 +44,7 @@ export default async function handler(req, res) {
 
   if (error) {
     console.error('[api/v1/applications] upsert error', { userId, error: error.message });
-    return jsonResponse(res, 500, { error: error.message });
+    return jsonResponse(res, 500, { error: 'Failed to save application' });
   }
 
   return jsonResponse(res, 200, { ok: true, application: data });

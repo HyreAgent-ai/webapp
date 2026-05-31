@@ -509,6 +509,7 @@ export default async function handler(req, res) {
     incrementTokenBudget(user.id, tokensUsed).catch(() => {});
     return res.status(groqRes.status).json(responseData);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error('[api/groq] unhandled error', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

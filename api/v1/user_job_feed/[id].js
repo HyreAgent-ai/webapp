@@ -34,7 +34,7 @@ export default async function handler(req, res) {
 
   if (error) {
     console.error('[api/v1/user_job_feed/[id]] update error', { userId, id, error: error.message });
-    return jsonResponse(res, 500, { error: error.message });
+    return jsonResponse(res, 500, { error: 'Failed to update job' });
   }
   if (!data) return jsonResponse(res, 404, { error: 'Job not found in feed' });
 

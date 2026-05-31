@@ -72,7 +72,8 @@ ${truncated}`;
 
   if (!groqRes.ok) {
     const err = await groqRes.json().catch(() => ({}));
-    return res.status(502).json({ error: 'Groq error', detail: err.error?.message });
+    console.error('[api/parse-resume] Groq upstream error', err);
+    return res.status(502).json({ error: 'Upstream AI service error' });
   }
 
   const groqData = await groqRes.json();

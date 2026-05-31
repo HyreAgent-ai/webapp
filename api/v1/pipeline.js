@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
   if (error) {
     console.error('[api/v1/pipeline] error', { userId, error: error.message });
-    return jsonResponse(res, 500, { error: error.message });
+    return jsonResponse(res, 500, { error: 'Failed to fetch pipeline' });
   }
 
   const jobs = (data || []).map(row => ({
