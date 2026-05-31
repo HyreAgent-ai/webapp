@@ -773,13 +773,6 @@ export async function fetchResume(id) {
 
 export async function upsertResume(resume) {
   const userId = await getUserId();
-  // Enforce max limit on insert (no id = new resume)
-  if (!resume.id) {
-    const existing = await fetchResumes();
-    if (existing.length >= MAX_RESUMES) {
-      throw new Error(`Maximum ${MAX_RESUMES} resumes allowed. Delete one to add another.`);
-    }
-  }
   const { data, error } = await supabase
     .from('resumes')
     .upsert(
@@ -792,7 +785,13 @@ export async function upsertResume(resume) {
     )
     .select('id')
     .single();
-  if (error) throw error;
+  if (error) {
+    // DB trigger fires RESUME_LIMIT_EXCEEDED for concurrent inserts past the limit
+    if (error.message?.includes('RESUME_LIMIT_EXCEEDED')) {
+      throw new Error(`Maximum ${MAX_RESUMES} resumes allowed. Delete one to add another.`);
+    }
+    throw error;
+  }
   return data.id;
 }
 
@@ -807,19 +806,10 @@ export async function deleteResume(id) {
 }
 
 // Sets is_primary=true for `id`, false for all other user resumes.
+// Uses server-side RPC to execute atomically and prevent race conditions.
 export async function setPrimaryResume(id) {
-  const userId = await getUserId();
-  const { error: clearErr } = await supabase
-    .from('resumes')
-    .update({ is_primary: false })
-    .eq('user_id', userId);
-  if (clearErr) throw clearErr;
-  const { error: setErr } = await supabase
-    .from('resumes')
-    .update({ is_primary: true })
-    .eq('id', id)
-    .eq('user_id', userId);
-  if (setErr) throw setErr;
+  const { error } = await supabase.rpc('set_primary_resume', { p_resume_id: id });
+  if (error) throw error;
 }
 
 export async function saveResumeAnalysis(id, report) {
