@@ -108,6 +108,10 @@ function sanitizeContact(c) {
 }
 
 export async function insertManualApplication(input) {
+  // BOLA-02: reject caller-supplied IDs that could collide with scraper-generated IDs
+  if (input.id !== undefined && !String(input.id).startsWith('manual-')) {
+    throw new Error('Application ID must start with "manual-"');
+  }
   const userId = await getUserId();
   const row = sanitizeApplication({
     ...input,

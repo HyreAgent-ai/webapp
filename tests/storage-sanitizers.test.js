@@ -110,3 +110,53 @@ describe('CODE-11 sanitizer whitelist enforcement', () => {
     expect(payload.name).toBe('Test Contact');        // legitimate field passes through
   });
 });
+
+describe('BOLA-02 insertManualApplication ID guard', () => {
+  it('rejects a caller-supplied ID that does not start with "manual-"', async () => {
+    const { insertManualApplication } = await import('../src/lib/storage.js');
+    await expect(
+      insertManualApplication({ id: 'greenhouse-acme-123', role: 'SWE', company: 'Acme' })
+    ).rejects.toThrow('Application ID must start with "manual-"');
+  });
+
+  it('rejects a lever-prefixed ID', async () => {
+    const { insertManualApplication } = await import('../src/lib/storage.js');
+    await expect(
+      insertManualApplication({ id: 'lever-corp-456', role: 'PM', company: 'Corp' })
+    ).rejects.toThrow('Application ID must start with "manual-"');
+  });
+
+  it('accepts a manual-prefixed ID without throwing', async () => {
+    const { insertManualApplication } = await import('../src/lib/storage.js');
+    // Supabase insert mock: from().insert().select().single()
+    const { supabase } = await import('../src/supabase.js');
+    supabase.from.mockReturnValueOnce({
+      insert: vi.fn(() => ({
+        select: vi.fn(() => ({
+          single: vi.fn(async () => ({ data: { id: 'manual-valid-1', role: 'SWE', company: 'X', user_id: 'user-1' }, error: null })),
+        })),
+      })),
+    });
+    await expect(
+      insertManualApplication({ id: 'manual-valid-1', role: 'SWE', company: 'X' })
+    ).resolves.toBeDefined();
+  });
+
+  it('auto-generates a manual- prefixed ID when no id supplied', async () => {
+    const { insertManualApplication } = await import('../src/lib/storage.js');
+    const { supabase } = await import('../src/supabase.js');
+    let capturedId;
+    supabase.from.mockReturnValueOnce({
+      insert: vi.fn((row) => {
+        capturedId = row.id;
+        return {
+          select: vi.fn(() => ({
+            single: vi.fn(async () => ({ data: { ...row }, error: null })),
+          })),
+        };
+      }),
+    });
+    await insertManualApplication({ role: 'SWE', company: 'X' });
+    expect(capturedId).toMatch(/^manual-/);
+  });
+});
