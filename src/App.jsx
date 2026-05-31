@@ -121,6 +121,7 @@ export default function JobAgent() {
   const [pendingSaves, setPendingSaves] = useState(0);
   const [saveError,    setSaveError]    = useState(null);
   const [loaded, setLoaded] = useState(false);
+  const [loadErrors, setLoadErrors] = useState([]);
   const [page, setPageRaw] = useState("dashboard");
 
   // Gate 2 — pre-signup pathname routing. /welcome, /welcome/consent,
@@ -185,39 +186,50 @@ export default function JobAgent() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      try {
-        const [dbApps, dbJobs, dbContacts, dbTemplates, dbSettings, savedJob, savedCompanies] = await Promise.all([
-          Storage.fetchApplications(),
-          Storage.fetchJobs(),
-          Storage.fetchContacts(),
-          Storage.fetchTemplates(),
-          Storage.fetchSettings(),
-          Storage.loadCurrentJob(),
-          Storage.fetchUserCompanies(),
-        ]);
+      const slices = ['applications', 'jobs', 'contacts', 'templates', 'settings', 'currentJob', 'companies'];
+      const results = await Promise.allSettled([
+        Storage.fetchApplications(),
+        Storage.fetchJobs(),
+        Storage.fetchContacts(),
+        Storage.fetchTemplates(),
+        Storage.fetchSettings(),
+        Storage.loadCurrentJob(),
+        Storage.fetchUserCompanies(),
+      ]);
 
+      const failed = [];
+      const [dbApps, dbJobs, dbContacts, dbTemplates, dbSettings, savedJob, savedCompanies] = results.map((r, i) => {
+        if (r.status === 'rejected') {
+          console.warn(`[App] init slice '${slices[i]}' failed:`, r.reason);
+          failed.push(slices[i]);
+          return null;
+        }
+        return r.value;
+      });
+
+      if (failed.length > 0) setLoadErrors(failed);
+
+      if (dbApps)    setApps(dbApps);
+      if (dbJobs) {
         const pipelineJobs = dbJobs.filter(j => j.in_pipeline && j.status !== 'completed');
-
-        setApps(dbApps);
         setPipeline(pipelineJobs.map(j => ({...j, status: 'active'})));
-        setContacts(dbContacts);
-        if (dbTemplates.length > 0) setTemplates(dbTemplates);
-        if (dbSettings.dark) setDark(dbSettings.dark === 'true');
-        // Load API keys from per-user integrations table (falls back to settings for migration period)
-        Storage.fetchUserIntegrations().then(integrations => {
-          if (integrations.groq)   setGroqKey(integrations.groq);
-          else if (dbSettings.groq_api_key) setGroqKey(dbSettings.groq_api_key);
-          if (integrations.serper) setSerperKey(integrations.serper);
-          else if (dbSettings.serper_api_key) setSerperKey(dbSettings.serper_api_key);
-        }).catch(() => {
-          if (dbSettings.groq_api_key)   setGroqKey(dbSettings.groq_api_key);
-          if (dbSettings.serper_api_key) setSerperKey(dbSettings.serper_api_key);
-        });
-        if (savedJob) setCurrentJob(savedJob);
-        if (savedCompanies.length > 0) setCustomCompanies(savedCompanies);
-      } catch(e) {
-        console.warn('Supabase load error (will use local state):', e.message);
       }
+      if (dbContacts) setContacts(dbContacts);
+      if (dbTemplates && dbTemplates.length > 0) setTemplates(dbTemplates);
+      const settings = dbSettings || {};
+      if (settings.dark) setDark(settings.dark === 'true');
+      // Load API keys from per-user integrations table (falls back to settings for migration period)
+      Storage.fetchUserIntegrations().then(integrations => {
+        if (integrations.groq)   setGroqKey(integrations.groq);
+        else if (settings.groq_api_key) setGroqKey(settings.groq_api_key);
+        if (integrations.serper) setSerperKey(integrations.serper);
+        else if (settings.serper_api_key) setSerperKey(settings.serper_api_key);
+      }).catch(() => {
+        if (settings.groq_api_key)   setGroqKey(settings.groq_api_key);
+        if (settings.serper_api_key) setSerperKey(settings.serper_api_key);
+      });
+      if (savedJob) setCurrentJob(savedJob);
+      if (savedCompanies && savedCompanies.length > 0) setCustomCompanies(savedCompanies);
       setLoaded(true);
     })();
   }, [user?.id]);
@@ -576,7 +588,15 @@ export default function JobAgent() {
               {[0,1,2].map(i => <div key={i} style={{width:8,height:8,borderRadius:"50%",background:t.pri,animation:`lp-dot .8s ${i*.15}s ease-in-out infinite`,opacity:.3}}/>)}
             </div>
           ) : (
-            pages[page] || pages.dashboard
+            <>
+              {loadErrors.length > 0 && (
+                <div style={{marginBottom:16,padding:"10px 14px",borderRadius:8,background:"#fff3cd",border:"1px solid #ffc107",color:"#856404",fontSize:12.5,display:"flex",alignItems:"center",gap:8}}>
+                  <span>⚠️ Some data failed to load ({loadErrors.join(', ')}). Showing partial data —</span>
+                  <span style={{cursor:"pointer",textDecoration:"underline",fontWeight:600}} onClick={() => window.location.reload()}>retry</span>
+                </div>
+              )}
+              {pages[page] || pages.dashboard}
+            </>
           )}
         </div>
       </div>
