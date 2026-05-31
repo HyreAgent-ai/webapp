@@ -217,7 +217,7 @@ export default function JobAgent() {
       if (dbContacts) setContacts(dbContacts);
       if (dbTemplates && dbTemplates.length > 0) setTemplates(dbTemplates);
       const settings = dbSettings || {};
-      if (settings.dark) setDark(settings.dark === 'true');
+      if (settings.dark != null) setDark(settings.dark === true || settings.dark === 'true');
       // Load API keys from per-user integrations table (falls back to settings for migration period)
       Storage.fetchUserIntegrations().then(integrations => {
         if (integrations.groq)   setGroqKey(integrations.groq);

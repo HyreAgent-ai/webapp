@@ -2,7 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit } from './lib/ratelimit.js';
 
 const SUPABASE_URL      = 'https://wefcbqfxzvvgremxhubi.supabase.co';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZmNicWZ4enZ2Z3JlbXhodWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTI1NjUsImV4cCI6MjA4ODkyODU2NX0.vXTs_vh0dMvEt83FR589vKY9JfcMBFVgN82QblQH6OU';
+if (!process.env.SUPABASE_ANON_KEY) throw new Error('SUPABASE_ANON_KEY env var missing');
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
 const PERSONA_MAP = {
   'Recruiter':       { keywords: ['recruiter', 'talent acquisition', 'recruiting'],                              query: 'recruiter OR "talent acquisition"' },
