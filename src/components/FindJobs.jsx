@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, RefreshCw, Plus, Check, ExternalLink, Upload, PenTool, Database, CheckCircle, UserPlus } from 'lucide-react';
-import { fetchJobs } from '../lib/storage.js';
+import { fetchJobs, upsertUserCompany } from '../lib/storage.js';
 
 function Card({children, t, style, onClick}) {
   return <div onClick={onClick} style={{background:t.card,border:`1px solid ${t.border}`,borderRadius:12,padding:20,boxShadow:t.shadow,cursor:onClick?"pointer":"default",...style}}>{children}</div>;
@@ -173,7 +173,10 @@ export default function FindJobs({searchResults, setSearchResults, pipeline, add
     const job = normalizeJob({...ext, source:"external", id:`ext-${Date.now()}`}, 0);
     setSearchResults(prev => [job, ...prev]);
     if (addToIntel && !findCompany(ext.company)) {
-      setCustomCompanies(prev => [...prev, {name:ext.company, tier:1, h1b:extIntel.h1b, itar:extIntel.itar, industry:extIntel.industry||"Unknown", roles:"", atsPlatform:"Unknown", domain:"", atsBoardUrl:""}]);
+      const newCompany = {name:ext.company, tier:1, h1b:extIntel.h1b, itar:extIntel.itar, industry:extIntel.industry||"Unknown", roles:"", ats_platform:"Unknown", domain:"", ats_board_url:""};
+      upsertUserCompany(newCompany)
+        .then(row => setCustomCompanies(prev => [...prev, row]))
+        .catch(e => console.warn('upsertUserCompany error:', e));
     }
     setExt({role:"",company:"",location:"",link:"",type:"Full-time",description:""});
     setAddToIntel(false);

@@ -860,19 +860,55 @@ export async function savePreferences(prefs) {
 }
 
 // ── Custom Company Intel ───────────────────────────────────────────────────────
-export async function saveCustomCompanies(companies) {
-  return saveSetting('custom_companies', JSON.stringify(companies));
+const COMPANY_ALLOWED = new Set([
+  'id', 'name', 'tier', 'h1b', 'itar', 'industry', 'roles',
+  'ats_platform', 'domain', 'ats_board_url',
+]);
+
+function sanitizeUserCompany(c) {
+  const out = {};
+  for (const k of Object.keys(c)) {
+    if (COMPANY_ALLOWED.has(k)) out[k] = c[k];
+  }
+  if (c.id !== undefined) out.id = c.id;
+  return out;
 }
 
-export async function loadCustomCompanies() {
+export async function fetchUserCompanies() {
   const userId = await getUserId();
   const { data, error } = await supabase
-    .from('settings')
-    .select('value')
-    .eq('key', `${userId}:custom_companies`)
-    .maybeSingle();
-  if (error || !data) return [];
-  try { return JSON.parse(data.value); } catch { return []; }
+    .from('user_companies')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function upsertUserCompany(company) {
+  const userId = await getUserId();
+  const payload = {
+    ...sanitizeUserCompany(company),
+    user_id: userId,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await supabase
+    .from('user_companies')
+    .upsert(payload, { onConflict: 'user_id,name' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteUserCompany(companyId) {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from('user_companies')
+    .delete()
+    .eq('id', companyId)
+    .eq('user_id', userId);
+  if (error) throw error;
 }
 
 // ── Unified Contacts ───────────────────────────────────────────────────────────

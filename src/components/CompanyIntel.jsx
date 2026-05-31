@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getCurrentUser } from '../lib/auth.js';
 import { Search, Plus, X, ExternalLink, Rocket } from 'lucide-react';
 import { APRIL_TARGETS } from '../data/april_targets.js';
+import { upsertUserCompany, deleteUserCompany } from '../lib/storage.js';
 
 function Card({children, t, style, onClick}) {
   return <div onClick={onClick} style={{background:t.card,border:`1px solid ${t.border}`,borderRadius:12,padding:20,boxShadow:t.shadow,cursor:onClick?"pointer":"default",...style}}>{children}</div>;
@@ -90,7 +91,19 @@ export default function CompanyIntel({customCompanies, setCustomCompanies, onSta
       atsPlatform: addForm.atsBoardUrl.trim() ? 'Custom' : 'Unknown',
       domain: '',
     };
-    setCustomCompanies(prev => [...(prev||[]), newCo]);
+    upsertUserCompany({
+      name: newCo.name,
+      tier: 1,
+      h1b: newCo.h1b,
+      itar: newCo.itar,
+      industry: newCo.category,
+      roles: Array.isArray(newCo.roles) ? newCo.roles.join(', ') : newCo.roles,
+      ats_platform: newCo.atsPlatform,
+      domain: newCo.domain,
+      ats_board_url: newCo.atsBoardUrl,
+    })
+      .then(row => setCustomCompanies(prev => [...(prev||[]), { ...newCo, id: row.id }]))
+      .catch(e => console.warn('upsertUserCompany error:', e));
     setAddForm(BLANK_FORM);
     setShowAdd(false);
   };
