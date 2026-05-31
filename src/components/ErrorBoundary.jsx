@@ -41,7 +41,7 @@ export default class ErrorBoundary extends Component {
               border: '1px solid #30363d',
               wordBreak: 'break-word',
             }}>
-              {this.state.error.message}
+              An unexpected error occurred.
             </div>
             <div style={{ fontSize: 12, color: '#484f58', marginBottom: 24 }}>
               This error has been logged to the console.
