@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit } from './lib/ratelimit.js';
 
 const SUPABASE_URL      = 'https://wefcbqfxzvvgremxhubi.supabase.co';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZmNicWZ4enZ2Z3JlbXhodWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTI1NjUsImV4cCI6MjA4ODkyODU2NX0.vXTs_vh0dMvEt83FR589vKY9JfcMBFVgN82QblQH6OU';
@@ -100,6 +101,11 @@ export default async function handler(req, res) {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) {
     return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  // ── SP-023: Rate limit (30 req/min per user) ────────────────────────────────
+  if (!await checkRateLimit(user.id, 'find-contacts')) {
+    return res.status(429).json({ error: 'Rate limit exceeded. Try again in 60s.' });
   }
 
   // ── Fetch API key server-side (never trust client-provided key) ─────────────

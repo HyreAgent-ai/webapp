@@ -4,6 +4,7 @@
 // AI-03: rejects raw messages passthrough; requires kind + structured data fields.
 // AI-04: rejects ITAR-flagged JD content server-side.
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, getTokenBudget, incrementTokenBudget } from './lib/ratelimit.js';
 
 const SUPABASE_URL      = 'https://wefcbqfxzvvgremxhubi.supabase.co';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZmNicWZ4enZ2Z3JlbXhodWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTI1NjUsImV4cCI6MjA4ODkyODU2NX0.vXTs_vh0dMvEt83FR589vKY9JfcMBFVgN82QblQH6OU';
@@ -447,6 +448,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `Unknown kind: ${kind}` });
   }
 
+  // ── SP-023: Rate limit (30 req/min per user) ────────────────────────────────
+  if (!await checkRateLimit(user.id, 'groq')) {
+    return res.status(429).json({ error: 'Rate limit exceeded. Try again in 60s.' });
+  }
+
   // ── AI-04: Server-side ITAR check on JD/resume content ─────────────────────
   const textToCheck = data.jd || data.text || '';
   if (hasItar(textToCheck)) {
@@ -479,6 +485,13 @@ export default async function handler(req, res) {
   // ── Token cap ────────────────────────────────────────────────────────────────
   const maxTokens = Math.min(clientMaxTokens ?? 1000, MAX_TOKENS_CAP);
 
+  // ── SP-019: Daily token budget (100k tokens/user/day) ───────────────────────
+  const DAILY_TOKEN_BUDGET = 100_000;
+  const usedToday = await getTokenBudget(user.id);
+  if (usedToday >= DAILY_TOKEN_BUDGET) {
+    return res.status(429).json({ error: 'Daily AI budget exceeded', 'Retry-After': 86400 });
+  }
+
   // ── Forward to Groq ───────────────────────────────────────────────────────────
   try {
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -491,6 +504,9 @@ export default async function handler(req, res) {
     });
 
     const responseData = await groqRes.json();
+    // SP-019: track tokens consumed (fire-and-forget — don't block the response)
+    const tokensUsed = responseData.usage?.total_tokens || maxTokens;
+    incrementTokenBudget(user.id, tokensUsed).catch(() => {});
     return res.status(groqRes.status).json(responseData);
   } catch (err) {
     return res.status(500).json({ error: err.message });
