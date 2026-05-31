@@ -638,6 +638,8 @@ export default function JobAnalysis({currentJob, updatePipelineJob, completePipe
 
   // Render bold markers as <strong> spans.
   // Defensive: normalises stale stored results that may contain \textbf{} instead of **.
+  // SECURITY: XSS protection here is IMPLICIT (React text nodes, no dangerouslySetInnerHTML).
+  // Do NOT switch to raw HTML rendering without adding DOMPurify — see docs/architecture/notes/output-normalization.md (AI-01 / MEMORY-GAP-12).
   function renderBoldMarkers(text) {
     if (!text) return null;
     const normalised = text
