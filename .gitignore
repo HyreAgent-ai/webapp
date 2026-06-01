@@ -76,3 +76,5 @@ Desktop.ini
 *.tmp
 .staging/
 .vercel
+.env.gate4
+playwright.config.cjs
