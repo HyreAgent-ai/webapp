@@ -199,9 +199,8 @@ export default function AppSettings({templates, setTemplates, groqKey, setGroqKe
       };
 
       const appCount = await migrateItems("ja_v5-apps", Storage.upsertApplication);
-      const netCount = await migrateItems("ja_v5-netlog", Storage.upsertNetlog);
 
-      setMigrateStatus(`Migration complete! ${appCount} applications, ${netCount} networking contacts imported to Supabase. Refresh the page to see your data.`);
+      setMigrateStatus(`Migration complete! ${appCount} applications imported to Supabase. Refresh the page to see your data.`);
     } catch(e) {
       setMigrateStatus(`Migration failed: ${e.message}`);
     }

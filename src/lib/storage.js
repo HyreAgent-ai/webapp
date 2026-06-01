@@ -381,39 +381,6 @@ export async function upsertApplication(app) {
   if (error) throw error;
 }
 
-// ── Networking Log ─────────────────────────────────────────────────────────────
-export async function fetchNetlog() {
-  const userId = await getUserId();
-  const { data, error } = await supabase
-    .from('netlog')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  // Hydrate snake_case DB column → camelCase used by UI
-  return (data || []).map(row => ({
-    ...row,
-    linkedinUrl: row.linkedin_url || null,
-  }));
-}
-
-export async function upsertNetlog(entry) {
-  const userId = await getUserId();
-  const clean = {
-    id:           String(entry.id),
-    user_id:      userId,
-    date:         entry.date         || null,
-    name:         entry.name         || null,
-    type:         entry.type         || null,
-    company:      entry.company      || null,
-    role:         entry.role         || null,
-    email:        entry.email        || null,
-    linkedin_url: entry.linkedinUrl  || entry.linkedin_url || null,
-  };
-  const { error } = await supabase.from('netlog').upsert(clean, { onConflict: 'id' });
-  if (error) throw error;
-}
-
 // ── Templates ──────────────────────────────────────────────────────────────────
 export async function fetchTemplates() {
   const userId = await getUserId();
@@ -507,82 +474,6 @@ export async function saveUserIntegration(service, apiKey) {
       { user_id: userId, service, api_key: apiKey },
       { onConflict: 'user_id,service' }
     );
-  if (error) throw error;
-}
-
-// ── LinkedIn DM Contacts ───────────────────────────────────────────────────────
-export async function fetchLinkedInContacts() {
-  const userId = await getUserId();
-  const { data, error } = await supabase
-    .from('linkedin_dm_contacts')
-    .select('*')
-    .eq('user_id', userId)
-    .order('priority',     { ascending: false })
-    .order('last_contact', { ascending: false });
-  if (error) throw error;
-  return data || [];
-}
-
-export async function fetchLinkedInFollowups() {
-  const userId = await getUserId();
-  const { data, error } = await supabase
-    .from('linkedin_dm_contacts')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('follow_up', true)
-    .order('priority', { ascending: false });
-  if (error) throw error;
-  return data || [];
-}
-
-export async function upsertLinkedInContact(contact) {
-  if (!contact.id) throw new Error('upsertLinkedInContact: contact.id is required');
-  const userId = await getUserId();
-  const row = {
-    id:            contact.id,
-    user_id:       userId,
-    name:          contact.name,
-    company:       contact.company,
-    position:      contact.position,
-    role_type:     contact.role_type,
-    conv_status:   contact.conv_status,
-    last_contact:  contact.last_contact,
-    days_since:    contact.days_since,
-    message_count: contact.message_count,
-    follow_up:     contact.follow_up,
-    priority:      contact.priority,
-    next_action:   contact.next_action,
-    summary:       contact.summary,
-    notes:         contact.notes,
-    linkedin_url:  contact.linkedin_url,
-    email:         contact.email,
-    updated_at:    new Date().toISOString(),
-  };
-  const { error } = await supabase
-    .from('linkedin_dm_contacts')
-    .upsert(row, { onConflict: 'id' });
-  if (error) throw error;
-}
-
-export async function updateLinkedInContactNotes(id, notes) {
-  if (!id) throw new Error('updateLinkedInContactNotes: id is required');
-  const userId = await getUserId();
-  const { error } = await supabase
-    .from('linkedin_dm_contacts')
-    .update({ notes, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', userId);
-  if (error) throw error;
-}
-
-export async function updateLinkedInContactFields(id, updates) {
-  if (!id) throw new Error('updateLinkedInContactFields: id is required');
-  const userId = await getUserId();
-  const { error } = await supabase
-    .from('linkedin_dm_contacts')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', userId);
   if (error) throw error;
 }
 
