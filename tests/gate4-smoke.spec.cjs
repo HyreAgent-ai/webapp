@@ -142,27 +142,68 @@ test.describe('Gate-4 smoke test', () => {
 
     await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 30000 });
 
-    // If already signed in (session persists), skip login form
-    const isLoggedIn = await page.locator('text=Dashboard').count() > 0 ||
-                       await page.locator('text=Resume').count() > 0;
-    if (isLoggedIn) {
-      console.log('Already signed in — skipping login form');
-      return;
+    // If onboarding is visible (no profile yet), skip login check — handle after sign-in
+    const isOnboarding = await page.locator('text=Welcome to JobAgent').count() > 0;
+    const isLoggedIn = !isOnboarding && (
+      await page.locator('text=Dashboard').count() > 0 ||
+      await page.locator('text=Sign out').count() > 0
+    );
+
+    if (!isLoggedIn && !isOnboarding) {
+      // Login.jsx — Sign In tab is active by default
+      await page.fill('input[type="email"]', TEST_EMAIL);
+      await page.fill('input[type="password"]', TEST_PASS);
+      await page.screenshot({ path: '/tmp/gate4-03-before-signin.png' });
+
+      await page.click('button[type="submit"]');
+
+      // Wait for either onboarding wizard or main app nav
+      await page.waitForFunction(() => {
+        return document.body.innerText.includes('Welcome to JobAgent') ||
+               document.body.innerText.includes('Dashboard') ||
+               document.body.innerText.includes('Sign out');
+      }, { timeout: 20000 });
+    } else {
+      console.log('Already signed in or on onboarding — skipping login form');
     }
 
-    // Login.jsx — Sign In tab is active by default
-    await page.fill('input[type="email"]', TEST_EMAIL);
-    await page.fill('input[type="password"]', TEST_PASS);
-    await page.screenshot({ path: '/tmp/gate4-03-before-signin.png' });
+    // Complete onboarding wizard if it appears (happens when profile is null)
+    const onboardingVisible = await page.locator('text=Welcome to JobAgent').count() > 0;
+    if (onboardingVisible) {
+      console.log('Onboarding wizard detected — completing it...');
 
-    await page.click('button[type="submit"]');
+      // Step 0: Fill name and continue
+      await page.fill('input[type="text"]', 'Gate-4 Tester');
+      await page.screenshot({ path: '/tmp/gate4-03-onboarding-step0.png' });
+      await page.click('button:has-text("Continue")');
+      await sleep(800);
 
-    // Wait for dashboard to appear (nav items appear after auth)
-    await page.waitForFunction(() => {
-      return document.body.innerText.includes('Dashboard') ||
-             document.body.innerText.includes('Resume') ||
-             document.body.innerText.includes('Sign out');
-    }, { timeout: 20000 });
+      // Step 1: Role Targets (pre-filled from domain) — just continue
+      await page.screenshot({ path: '/tmp/gate4-03-onboarding-step1.png' });
+      await page.click('button:has-text("Continue")');
+      await sleep(800);
+
+      // Step 2: API Keys — skip
+      await page.screenshot({ path: '/tmp/gate4-03-onboarding-step2.png' });
+      const skipBtn2 = page.locator('button:has-text("Skip")');
+      if (await skipBtn2.count() > 0) {
+        await skipBtn2.first().click();
+      } else {
+        await page.click('button:has-text("Continue")');
+      }
+      await sleep(800);
+
+      // Step 3: Resume Upload — click Finish Setup (skips optional upload)
+      await page.screenshot({ path: '/tmp/gate4-03-onboarding-step3.png' });
+      await page.click('button:has-text("Finish Setup")');
+
+      // Wait for main app to load after onboarding completes
+      await page.waitForFunction(() => {
+        return document.body.innerText.includes('Dashboard') ||
+               document.body.innerText.includes('Sign out');
+      }, { timeout: 30000 });
+      console.log('Onboarding completed ✅ — main app loaded');
+    }
 
     console.log('Signed in — page:', page.url());
     await page.screenshot({ path: '/tmp/gate4-03b-signed-in.png' });
@@ -170,10 +211,11 @@ test.describe('Gate-4 smoke test', () => {
 
   // ── Step 4: navigate to Resume tab ──────────────────────────────────────
   test('4. Resume tab loads', async () => {
-    // Click Resume in the sidebar / nav
-    const resumeBtn = page.locator('button, a').filter({ hasText: /^Resume$/ }).first();
-    await resumeBtn.waitFor({ timeout: 10000 });
-    await resumeBtn.click();
+    // Nav items are <div onClick> elements, not <button> or <a> (see App.jsx sidebar rendering)
+    // Use exact text span inside nav div
+    const resumeNavItem = page.locator('nav div').filter({ hasText: /^Resume$/ }).first();
+    await resumeNavItem.waitFor({ timeout: 10000 });
+    await resumeNavItem.click();
     await sleep(1500);
     await page.screenshot({ path: '/tmp/gate4-04-resume-tab.png' });
 
@@ -292,8 +334,8 @@ test.describe('Gate-4 smoke test', () => {
 
   // ── Step 8: application creation ────────────────────────────────────────
   test('8. can create an application from the Dashboard', async () => {
-    // Navigate to Dashboard
-    const dashBtn = page.locator('button, a').filter({ hasText: /^Dashboard$/ }).first();
+    // Navigate to Dashboard (nav items are <div onClick>, not <button>/<a>)
+    const dashBtn = page.locator('nav div').filter({ hasText: /^Dashboard$/ }).first();
     if (await dashBtn.count() > 0) {
       await dashBtn.click();
       await sleep(1000);
