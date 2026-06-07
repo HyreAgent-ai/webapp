@@ -1,0 +1,60 @@
+name: Friend bug report
+description: Report something broken or confusing in HyreAgent.
+title: "[friend-bug] "
+labels: ["friend-bug", "severity:medium"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the issue you ran into.
+      placeholder: I clicked X and then Y broke...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: What should have happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps so we can reproduce.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See error
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Safari
+        - Firefox
+        - Edge
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity (your best guess — owner will re-triage)
+      default: 2
+      options:
+        - "severity:critical"
+        - "severity:high"
+        - "severity:medium"
+        - "severity:low"
+    validations:
+      required: true
+  - type: input
+    id: account-email
+    attributes:
+      label: Account email (optional)
+      description: Helps us correlate with logs. Leave blank if you'd rather not share.
