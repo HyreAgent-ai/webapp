@@ -24,7 +24,7 @@ const { test, expect, chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
 
-const BASE_URL      = 'https://jobagent-web.vercel.app';
+const BASE_URL      = process.env.BASE_URL || 'https://hyreagent.dpdns.org';
 const TEST_EMAIL    = process.env.TEST_EMAIL || 'siddardth7+gate4@gmail.com';
 const TEST_PASS     = process.env.TEST_PASS  || '';
 const DO_SIGNUP     = process.env.GATE4_SIGNUP === '1';
