@@ -1,4 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "jobagent-web.vercel.app" }],
+      "destination": "https://hyreagent.dpdns.org/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [{"source": "/((?!api/).*)", "destination": "/index.html"}],
   "functions": {"api/*.js": {"maxDuration": 10}}
 }
