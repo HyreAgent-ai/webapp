@@ -1,0 +1,1 @@
+-- Remote migration applied via Supabase Studio before CLI tracking began.

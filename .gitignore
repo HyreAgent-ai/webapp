@@ -75,3 +75,6 @@ Desktop.ini
 # Misc
 *.tmp
 .staging/
+.vercel
+.env.gate4
+playwright.config.cjs
